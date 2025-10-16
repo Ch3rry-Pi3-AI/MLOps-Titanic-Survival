@@ -1,117 +1,86 @@
-# 🚀 Data Ingestion — PostgreSQL ➜ `artifacts/raw/` (train/test split)
+# 🧠 **Exploratory Analysis — MLOps Titanic Survival Prediction**
 
-This stage ingests the **Titanic** table from **PostgreSQL**, splits it into **train/test**, and writes CSVs under `artifacts/raw/`.  
-It uses centralised configuration in `config/` and a single ingestion script in `src/`.
+This branch represents the **data scientist’s experimental stage**, where the **Titanic dataset** (previously ingested from a PostgreSQL database) is explored, cleaned, and analysed within a **Jupyter Notebook** environment.
 
-## 🗂️ Project Structure (relevant files)
+The goal of this stage is to **understand passenger survival patterns**, perform **EDA and preprocessing experiments**, and develop an **early classification prototype** — before the workflow is modularised and automated by an ML engineer in the next stage.
 
-```text
+
+
+## 🧾 **What This Stage Includes**
+
+* ✅ Jupyter Notebook (`notebook/titanic.ipynb`) for interactive data exploration and experimentation
+* ✅ Data ingestion from raw sources:
+
+  * `titanic_train.csv` — passenger data extracted from PostgreSQL
+* ✅ Initial data inspection (missing values, category distributions, duplicates)
+* ✅ Preprocessing and encoding for categorical variables (`Sex`, `Embarked`)
+* ✅ Feature engineering:
+
+  * Family-based variables — `Familysize`, `Isalone`
+  * Cabin indicator — `HasCabin`
+  * Title extraction — `Mr`, `Mrs`, `Miss`, `Master`, `Rare`
+  * Interaction features — `Pclass_Fare`, `Age_Fare`
+* ✅ Handling of **class imbalance** via **SMOTE** oversampling
+* ✅ Baseline **Random Forest Classifier** with **RandomizedSearchCV** for hyperparameter tuning
+* ✅ Evaluation of model accuracy, feature importances, and class balance metrics
+
+This notebook acts as a **sandbox for the data scientist** — a controlled environment to experiment freely before converting the logic into modular, production-ready scripts and pipeline stages.
+
+
+
+## 🗂️ **Updated Project Structure**
+
+```
 mlops-titanic-survival-prediction/
-├─ config/
-│  ├─ database_config.py     # 🗄️ DB connection parameters (host, port, dbname, user, password)
-│  └─ paths_config.py        # 📁 Paths: artifacts/raw, titanic_train.csv, titanic_test.csv
-└─ src/
-   └─ data_ingestion.py      # ⚙️ Extracts from Postgres, splits, saves CSVs
-````
-
-## 🎯 What This Does
-
-1. 🧩 Connects to PostgreSQL using `config/database_config.py`.
-2. 🧠 Runs `SELECT * FROM public.titanic`.
-3. ✂️ Splits 80/20 with `train_test_split`.
-4. 💾 Saves to:
-
-   * `artifacts/raw/titanic_train.csv`
-   * `artifacts/raw/titanic_test.csv`
- 
-## ⚙️ Configuration
-
-### 🗄️ `config/database_config.py`
-
-Edit these if your database isn’t using local defaults:
-
-```python
-DB_CONFIG = {
-    "host": "localhost",
-    "port": "5432",
-    "user": "postgres",
-    "password": "postgres",
-    "dbname": "postgres",
-}
+├── artifacts/
+│   ├── raw/                        # From previous Data Ingestion stage
+│   │   └── titanic_train.csv
+│   └── processed/                  # Processed datasets, feature matrices, etc.
+├── notebook/
+│   └── titanic.ipynb               # 🔍 Data scientist EDA & experimentation
+├── config/
+│   ├── database_config.py          # PostgreSQL connection parameters
+│   ├── paths_config.py             # Directory and file path constants
+│   └── __init__.py
+├── src/
+│   ├── data_ingestion.py           # Extracts Titanic data from PostgreSQL
+│   ├── logger.py                   # Centralised logging
+│   ├── custom_exception.py         # Unified exception handling
+│   └── __init__.py
+├── utils/
+│   └── common_functions.py         # Shared utilities (optional)
+├── requirements.txt
+├── setup.py
+└── README.md                       # 📖 You are here
 ```
 
-### 📁 `config/paths_config.py`
+> 💡 The notebook uses data stored in `artifacts/raw/`, generated during the **Data Ingestion** stage.
+> This dataset forms the foundation for feature engineering and model development in subsequent pipeline stages.
 
-Paths already defined for this stage:
 
-```python
-RAW_DIR = "artifacts/raw"
-TRAIN_PATH = os.path.join(RAW_DIR, "titanic_train.csv")
-TEST_PATH  = os.path.join(RAW_DIR, "titanic_test.csv")
-PROCESSED_DIR = "artifacts/processed"
-```
 
-## ▶️ Run It
+## 🧩 **Notebook Highlights**
 
-From the project root:
+Within `notebook/titanic.ipynb`, you’ll find clearly structured sections covering:
 
-```powershell
-python src/data_ingestion.py
-```
+1. **Setup & Imports** — loads dependencies, configures the working directory, and defines data paths.
+2. **Data Loading & Quick Checks** — imports the Titanic dataset, previews it, and identifies missing values.
+3. **Preprocessing & Encoding** — imputes missing data, encodes categorical variables, and standardises fields.
+4. **Feature Engineering** — constructs derived features such as `Familysize`, `Isalone`, `HasCabin`, and `Title`.
+5. **SMOTE Resampling** — balances survival classes to improve model generalisation.
+6. **Train/Test Split** — separates data for unbiased model validation.
+7. **Random Forest Modelling** — fits a classifier using Randomized Search for hyperparameter optimisation.
+8. **Model Evaluation** — reports accuracy, classification metrics, and top feature importances.
 
-Expected log output (console and `logs/log_YYYY-MM-DD.log`):
 
-```
-INFO - 🚀 Starting Data Ingestion Pipeline...
-INFO - Data extracted successfully via SQLAlchemy. Shape: (891, 12)
-INFO - Data successfully split and saved.
-Train: artifacts/raw/titanic_train.csv ((712, 12)), Test: artifacts/raw/titanic_test.csv ((179, 12))
-INFO - ✅ Data Ingestion Pipeline completed successfully.
-```
 
-Check the output files:
+## 🚀 **Next Stage — Data Processing**
 
-```powershell
-dir artifacts\raw
-# titanic_train.csv
-# titanic_test.csv
-```
+In the next branch, this exploratory workflow evolves into the **Data Processing** stage — where the notebook logic is modularised into a reproducible preprocessing pipeline:
 
-## 🧠 How It Works (internals)
+* Creation of `src/data_processing.py` for automated feature engineering, encoding, and cleaning.
+* Update of `config/paths_config.py` to include processed data directories and file outputs.
+* Structured artefacts saved under `artifacts/processed/` for downstream training and evaluation.
+* Integration of robust logging and exception handling for traceability across environments.
 
-`src/data_ingestion.py` performs the following steps:
-
-* 🧩 Builds a SQLAlchemy engine using credentials from `DB_CONFIG`.
-* 🗃️ Executes a query (`SELECT * FROM public.titanic`).
-* ✂️ Splits the DataFrame with `train_test_split(test_size=0.2, random_state=42)`.
-* 💾 Writes train/test CSVs to paths defined in `paths_config.py`.
-
-## 🧰 Troubleshooting
-
-* 💬 **Unicode sequences (`\u2705`, `\U0001f680`) in logs**
-  Your logger is UTF-8 enabled, but ensure your terminal also uses UTF-8 (Windows: `chcp 65001`) to display emojis correctly.
-
-* ⚠️ **Pandas DBAPI2 warning**
-  Already handled — the ingestion uses SQLAlchemy, which avoids this warning entirely.
-
-* 🧩 **Dependency versions (Python 3.13)**
-  Make sure `numpy>=2.1`, `scipy>=1.11`, `scikit-learn>=1.6`, and `psycopg2-binary>=2.9.11` are installed.
-
-## 🔗 Quick Integration Example
-
-Use the class directly in another script or notebook:
-
-```python
-from config.database_config import DB_CONFIG
-from config.paths_config import RAW_DIR
-from src.data_ingestion import DataIngestion
-
-ing = DataIngestion(DB_CONFIG, RAW_DIR)
-ing.run()
-```
-
-## 🛠️ Next Steps
-
-* 🧪 Add a simple `validate_ingestion.py` to verify row counts and schema consistency.
-* 🔁 Extend ingestion for incremental or conditional loads.
-* 🧮 Add preprocessing scripts that read from `artifacts/raw/` and write to `artifacts/processed/`.
+This transition marks the evolution from **data science experimentation → engineered preprocessing pipeline**, bridging the gap between **research and reproducible MLOps automation**.
