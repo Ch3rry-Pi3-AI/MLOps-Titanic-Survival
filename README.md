@@ -39,16 +39,7 @@ mlops-titanic-survival-prediction/
 ├── notebook/
 │   └── titanic.ipynb               # 🔍 Data scientist EDA & experimentation
 ├── config/
-│   ├── database_config.py          # PostgreSQL connection parameters
-│   ├── paths_config.py             # Directory and file path constants
-│   └── __init__.py
 ├── src/
-│   ├── data_ingestion.py           # Extracts Titanic data from PostgreSQL
-│   ├── logger.py                   # Centralised logging
-│   ├── custom_exception.py         # Unified exception handling
-│   └── __init__.py
-├── utils/
-│   └── common_functions.py         # Shared utilities (optional)
 ├── requirements.txt
 ├── setup.py
 └── README.md                       # 📖 You are here
