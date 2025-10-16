@@ -1,7 +1,7 @@
 # 🧠 `src/` README — Core Pipeline Modules
 
-The `src/` directory now includes the **Feature Store** and **Data Processing** components — the backbone of the **MLOps Titanic Survival Prediction** project’s mid-stage pipeline.
-At this point, the focus shifts from *data extraction* to *feature engineering*, *balancing*, and *storing processed features* in a **Redis-based feature store** for model training and inference.
+The `src/` directory now includes **Model Training** alongside the **Feature Store** and **Data Processing** components — completing the mid-stage pipeline for the **MLOps Titanic Survival Prediction** project.
+The flow is now: *data extraction* ➜ *feature engineering & storage in Redis* ➜ *model training with persisted features*.
 
 ## 📁 Folder Overview
 
@@ -11,17 +11,76 @@ src/
 ├─ logger.py                 # Centralised logging configuration (UTF-8 supported)
 ├─ data_ingestion.py         # Extracts raw Titanic data from PostgreSQL to artifacts/raw/
 ├─ feature_store.py          # Redis-based key-value feature store interface
-└─ feature_processing.py     # Preprocesses data, handles imbalance, stores features to Redis
+├─ feature_processing.py     # Preprocesses data, handles imbalance, stores features to Redis
+└─ model_training.py         # Loads features from Redis, tunes & trains RF, saves model
 ```
 
+## 🤖 `model_training.py` — Random Forest Training & Persistence
 
+### Purpose
+
+Implements the **ModelTraining** class — responsible for:
+
+* Loading engineered features by `PassengerId` from the **Redis Feature Store**
+* Splitting entity IDs into train/test sets
+* Hyperparameter tuning with **RandomizedSearchCV** on **RandomForestClassifier**
+* Evaluating **accuracy** on the held-out set
+* Persisting the trained model to `artifacts/models/random_forest_model.pkl`
+
+### Pipeline Overview
+
+| Step | Description                                                                                               |
+| :--- | :-------------------------------------------------------------------------------------------------------- |
+| 1️⃣  | Fetch all entity IDs from Redis and split into train/test.                                                |
+| 2️⃣  | Load per-entity features (including `Survived`) from Redis.                                               |
+| 3️⃣  | Build `X_train`, `X_test`, `y_train`, `y_test`.                                                           |
+| 4️⃣  | Run **RandomizedSearchCV** for RF (`n_estimators`, `max_depth`, `min_samples_split`, `min_samples_leaf`). |
+| 5️⃣  | Evaluate accuracy and save the best model to disk.                                                        |
+
+### Key Features
+
+| Feature                                 | Description                                                           |
+| :-------------------------------------- | :-------------------------------------------------------------------- |
+| 🧲 **Feature Store Integration**        | Pulls features directly from Redis (`entity:<PassengerId>:features`). |
+| 🧪 **Randomised Hyperparameter Search** | Small yet effective search space for fast iteration.                  |
+| 📈 **Evaluation**                       | Reports test accuracy for quick feedback loops.                       |
+| 📦 **Model Persistence**                | Serialises the best estimator to `artifacts/models/`.                 |
+| 🧾 **Logging + Exceptions**             | Full traceability with `logger` and `CustomException`.                |
+
+### Example Usage
+
+```bash
+python src/model_training.py
+```
+
+### Internal Workflow
+
+```python
+from src.feature_store import RedisFeatureStore
+from src.model_training import ModelTraining
+
+store = RedisFeatureStore()
+trainer = ModelTraining(feature_store=store)
+trainer.run()
+```
+
+### Typical Log Output
+
+```
+2025-10-16 15:08:41,210 - INFO - 🚀 Starting Model Training pipeline...
+2025-10-16 15:08:41,415 - INFO - Prepared training data with 569 rows and 11 features.
+2025-10-16 15:08:43,102 - INFO - Best parameters: {'n_estimators': 200, 'max_depth': 20, 'min_samples_split': 2, 'min_samples_leaf': 1}
+2025-10-16 15:08:43,415 - INFO - ✅ Test Accuracy: 0.8425
+2025-10-16 15:08:43,417 - INFO - 📦 Model saved at: artifacts/models/random_forest_model.pkl
+2025-10-16 15:08:43,418 - INFO - 🏁 End of Model Training pipeline.
+```
 
 ## ⚙️ `feature_store.py` — Redis Feature Store
 
 ### Purpose
 
 Implements the **RedisFeatureStore** class — a lightweight abstraction over **Redis** used for feature management.
-It provides **row-level** and **batch-level** operations to persist engineered Titanic features and retrieve them efficiently for downstream tasks (model training, inference, and monitoring).
+It provides **row-level** and **batch-level** operations to persist engineered Titanic features and retrieve them efficiently for downstream tasks.
 
 ### Key Features
 
@@ -47,21 +106,8 @@ from src.feature_store import RedisFeatureStore
 store = RedisFeatureStore()
 sample_features = {"Age": 29, "Fare": 72.5, "Sex": 0}
 store.store_features("1001", sample_features)
-
-retrieved = store.get_features("1001")
-print(retrieved)
-# → {'Age': 29, 'Fare': 72.5, 'Sex': 0}
+print(store.get_features("1001"))
 ```
-
-### Typical Log Output
-
-```
-2025-10-16 13:22:10,421 - INFO - RedisFeatureStore initialised: host=localhost, port=6379, db=0
-2025-10-16 13:22:10,426 - DEBUG - Stored features for entity 1001 with key: entity:1001:features
-2025-10-16 13:22:10,430 - INFO - ✅ Retrieved sample features: {'Age': 29, 'Fare': 72.5, 'Sex': 0}
-```
-
-
 
 ## 🧮 `feature_processing.py` — Data Preparation & Feature Engineering
 
@@ -69,48 +115,10 @@ print(retrieved)
 
 Implements the **DataProcessing** class — responsible for:
 
-* Loading training and test datasets from `artifacts/raw/`.
-* Performing **data cleaning** and **feature engineering**.
-* Addressing **class imbalance** using **SMOTE**.
-* Writing the resulting features into the **Redis feature store** for reuse in training and inference.
-
-### Pipeline Overview
-
-| Step | Description                                                                                                                                              |
-| :--- | :------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1️⃣  | Load CSVs for training and testing from configured paths.                                                                                                |
-| 2️⃣  | Clean and impute missing values for `Age`, `Embarked`, and `Fare`.                                                                                       |
-| 3️⃣  | Encode categorical fields (`Sex`, `Embarked`) and create engineered variables (`Familysize`, `Isalone`, `HasCabin`, `Title`, `Pclass_Fare`, `Age_Fare`). |
-| 4️⃣  | Use **SMOTE** to balance the target variable `Survived`.                                                                                                 |
-| 5️⃣  | Store engineered features in the Redis Feature Store via `RedisFeatureStore`.                                                                            |
-
-### Key Features
-
-| Feature                        | Description                                                              |
-| :----------------------------- | :----------------------------------------------------------------------- |
-| 🧩 **Automated Preprocessing** | Handles imputations, encoding, and engineered feature creation.          |
-| ⚖️ **SMOTE Integration**       | Balances the dataset for improved model generalisation.                  |
-| 🔁 **Redis Integration**       | Exports engineered features to the feature store for cross-stage access. |
-| 🧾 **Traceable Pipeline Logs** | Logs each transformation for full reproducibility and debugging.         |
-| 🧠 **Feature Reuse**           | Allows models to directly query engineered features by `PassengerId`.    |
-
-### Example Usage
-
-```bash
-python src/feature_processing.py
-```
-
-### Internal Workflow
-
-```python
-from config.paths_config import TRAIN_PATH, TEST_PATH
-from src.feature_store import RedisFeatureStore
-from src.feature_processing import DataProcessing
-
-store = RedisFeatureStore()
-processor = DataProcessing(TRAIN_PATH, TEST_PATH, store)
-processor.run()
-```
+* Loading training and test datasets from `artifacts/raw/`
+* Cleaning, encoding, and **feature engineering**
+* Addressing **class imbalance** using **SMOTE**
+* Writing engineered features into the **Redis Feature Store**
 
 ### Typical Log Output
 
@@ -122,12 +130,9 @@ processor.run()
 2025-10-16 14:01:23,431 - INFO - ✅ Data Processing pipeline completed successfully.
 ```
 
-
-
 ## ⚙️ `data_ingestion.py` — Data Extraction Pipeline (Context Recap)
 
-For context, this file (from the previous stage) still forms the *entry point* of the overall pipeline —
-responsible for fetching and splitting Titanic data from PostgreSQL before preprocessing.
+Still the *entry point* of the overall data flow — fetching and splitting Titanic data from PostgreSQL before preprocessing.
 
 | Step | Description                                      |
 | :--- | :----------------------------------------------- |
@@ -135,25 +140,46 @@ responsible for fetching and splitting Titanic data from PostgreSQL before prepr
 | 2️⃣  | Split into 80/20 training and test sets.         |
 | 3️⃣  | Save results to `artifacts/raw/`.                |
 
-Together with `feature_processing.py`, it defines the **Raw ➜ Processed ➜ Feature Store** data flow.
+## 🗂️ Updated Project Structure (relevant paths)
 
+```text
+mlops-titanic-survival-prediction/
+├─ artifacts/
+│  ├─ raw/
+│  │  ├─ titanic_train.csv
+│  │  └─ titanic_test.csv
+│  ├─ processed/
+│  └─ models/
+│     └─ random_forest_model.pkl
+├─ config/
+│  ├─ database_config.py
+│  └─ paths_config.py
+├─ notebook/
+│  └─ titanic.ipynb
+├─ src/
+│  ├─ custom_exception.py
+│  ├─ logger.py
+│  ├─ data_ingestion.py
+│  ├─ feature_store.py
+│  ├─ feature_processing.py
+│  └─ model_training.py
+└─ logs/
+   └─ log_YYYY-MM-DD.log
+```
 
 ## ⚠️ `custom_exception.py` — Unified Error Handling
 
-No changes in behaviour — it continues to manage all exception reporting uniformly across the ingestion and processing stages.
+Continues to manage exception reporting uniformly across ingestion, processing, and training.
 
-| Benefit                        | Description                                                                   |
-| :----------------------------- | :---------------------------------------------------------------------------- |
-| 🪶 **Lightweight**             | Works with any raised error across pipeline files.                            |
-| 🔍 **Context-Rich Tracebacks** | Identifies file name and line number automatically.                           |
-| 🧩 **Seamless Integration**    | Used in `data_ingestion.py`, `feature_processing.py`, and `feature_store.py`. |
-
-
+| Benefit                        | Description                                         |
+| :----------------------------- | :-------------------------------------------------- |
+| 🪶 **Lightweight**             | Works with any raised error across pipeline files.  |
+| 🔍 **Context-Rich Tracebacks** | Identifies file name and line number automatically. |
+| 🧩 **Seamless Integration**    | Used in all pipeline modules.                       |
 
 ## 🪵 `logger.py` — Centralised Logging
 
-Provides UTF-8-enabled logging for all pipeline components —
-ensuring consistency between ingestion, processing, and storage phases.
+UTF-8-enabled logging shared by all modules for consistent, readable progress and diagnostics.
 
 | Property  | Example                                     |
 | :-------- | :------------------------------------------ |
@@ -161,25 +187,22 @@ ensuring consistency between ingestion, processing, and storage phases.
 | File name | `log_2025-10-16.log`                        |
 | Format    | `%(asctime)s - %(levelname)s - %(message)s` |
 
-
-
 ## 🔗 Integration Summary
 
-| Module                  | Primary Function                         | Downstream Dependency                |
-| :---------------------- | :--------------------------------------- | :----------------------------------- |
-| `data_ingestion.py`     | Extracts and splits raw Titanic data     | Feeds into `feature_processing.py`   |
-| `feature_processing.py` | Cleans, engineers, and balances features | Writes to `feature_store.py`         |
-| `feature_store.py`      | Manages Redis-based feature persistence  | Used during model training/inference |
-| `custom_exception.py`   | Handles errors across all modules        | Shared                               |
-| `logger.py`             | Logs pipeline progress consistently      | Shared                               |
-
+| Module                  | Primary Function                          | Downstream Dependency                    |
+| :---------------------- | :---------------------------------------- | :--------------------------------------- |
+| `data_ingestion.py`     | Extracts and splits raw Titanic data      | Feeds into `feature_processing.py`       |
+| `feature_processing.py` | Cleans, engineers, and balances features  | Writes to `feature_store.py`             |
+| `feature_store.py`      | Manages Redis-based feature persistence   | Used by `model_training.py`              |
+| `model_training.py`     | Tunes, trains, evaluates, and saves model | Produces artefact in `artifacts/models/` |
+| `custom_exception.py`   | Handles errors across all modules         | Shared                                   |
+| `logger.py`             | Logs pipeline progress consistently       | Shared                                   |
 
 ✅ **In summary:**
 
-* `feature_processing.py` → Transforms and engineers data for model readiness.
-* `feature_store.py` → Persists these features for fast retrieval and reusability.
-* `data_ingestion.py` → Provides the raw input foundation.
-* `custom_exception.py` & `logger.py` → Provide consistency, observability, and traceability.
+* `feature_processing.py` → transforms and engineers data for model readiness
+* `feature_store.py` → persists engineered features for fast retrieval
+* `model_training.py` → pulls features, tunes & trains RF, and saves the model artefact
+* `data_ingestion.py`, `custom_exception.py`, `logger.py` → provide the stable foundation for reliable, observable pipelines
 
-Together, these files represent the **intermediate data foundation** of the MLOps Titanic Survival Prediction system —
-bridging raw ingestion with model training through **structured preprocessing**, **feature engineering**, and **stateful feature storage**.
+This completes the mid-stage pipeline and sets up the project for the next branch: **evaluation, model registry/versioning, and inference deployment**.
