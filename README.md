@@ -23,7 +23,7 @@ mlops-titanic-survival-prediction/
 
    * `artifacts/raw/titanic_train.csv`
    * `artifacts/raw/titanic_test.csv`
-
+ 
 ## ⚙️ Configuration
 
 ### 🗄️ `config/database_config.py`
