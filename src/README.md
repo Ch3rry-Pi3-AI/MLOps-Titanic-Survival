@@ -1,15 +1,68 @@
-# `src/` README — Core Utilities (Custom Exception & Logger)
+# 🧠 `src/` README — Core Pipeline Modules
 
-This folder contains **project-wide utilities** for **error handling** and **logging**, ensuring that all modules within the MLOps Titanic Survival Prediction pipeline follow a consistent and traceable debugging and monitoring pattern.
-
-
+The `src/` directory contains the **core functional modules** for the  
+**MLOps Titanic Survival Prediction** project.  
+It includes utilities for **logging**, **error handling**, and **data ingestion**, ensuring that all components of the pipeline maintain a consistent, traceable, and reproducible structure.
 
 ## 📁 Folder Overview
 
 ```text
 src/
-├─ custom_exception.py   # Unified and detailed exception handling
-└─ logger.py             # Centralised logging configuration
+├─ custom_exception.py     # Unified and detailed exception handling
+├─ logger.py               # Centralised logging configuration (UTF-8)
+└─ data_ingestion.py       # Data extraction pipeline from PostgreSQL to raw artifacts
+````
+## ⚙️ `data_ingestion.py` — Data Extraction Pipeline
+
+### Purpose
+
+Implements the **DataIngestion** class, responsible for:
+
+* Connecting to the **PostgreSQL** database defined in `config/database_config.py`.
+* Extracting the Titanic dataset from the `public.titanic` table.
+* Splitting the data into **training** and **test** sets.
+* Saving both CSVs into the local `artifacts/raw/` directory.
+
+This script integrates with the project’s:
+
+* Centralised logging (`src/logger.py`)
+* Custom exception handling (`src/custom_exception.py`)
+* Configuration management (`config/database_config.py`, `config/paths_config.py`)
+
+### Key Features
+
+| Feature                              | Description                                                              |
+| :----------------------------------- | :----------------------------------------------------------------------- |
+| 🧩 **SQLAlchemy Integration**        | Uses SQLAlchemy engine for efficient and compatible database querying.   |
+| 🗃️ **Automatic Directory Creation** | Creates `artifacts/raw/` dynamically if missing.                         |
+| 🔁 **Train/Test Split**              | Splits the dataset (80/20) using scikit-learn’s `train_test_split`.      |
+| 🧾 **Logging + Exception Handling**  | Every stage is logged and wrapped in custom exceptions for traceability. |
+
+### Example Usage
+
+```bash
+python src/data_ingestion.py
+```
+
+### Internal Workflow
+
+```python
+from config.database_config import DB_CONFIG
+from config.paths_config import RAW_DIR
+from src.data_ingestion import DataIngestion
+
+data_ingestion = DataIngestion(DB_CONFIG, RAW_DIR)
+data_ingestion.run()
+```
+
+### Typical Log Output
+
+```
+2025-10-15 20:05:47,180 - INFO - 🚀 Starting Data Ingestion Pipeline...
+2025-10-15 20:05:49,362 - INFO - Data extracted successfully via SQLAlchemy. Shape: (891, 12)
+2025-10-15 20:05:49,372 - INFO - Data successfully split and saved.
+Train: artifacts/raw/titanic_train.csv (712, 12), Test: artifacts/raw/titanic_test.csv (179, 12)
+2025-10-15 20:05:49,372 - INFO - ✅ Data Ingestion Pipeline completed successfully.
 ```
 
 
@@ -21,18 +74,18 @@ src/
 Provides a **CustomException** class that enriches raised errors with:
 
 * The **file name** and **line number** where the error occurred.
-* A formatted **traceback** (useful for debugging complex Airflow or pipeline failures).
-* A flexible constructor that works whether you pass:
+* A formatted **traceback** for debugging complex failures.
+* Flexible constructor logic that accepts:
 
   * the `sys` module,
   * an exception instance, or
-  * nothing (falls back to the current `sys.exc_info()`).
+  * nothing (defaults to the current `sys.exc_info()`).
 
 ### Key Features
 
-* Produces readable, context-rich tracebacks in logs or Airflow task logs.
-* Prevents missing-argument errors when raising exceptions dynamically.
-* Works seamlessly across your DAGs, pipeline modules, and testing scripts.
+* Produces readable, context-rich tracebacks for Airflow and local debugging.
+* Works seamlessly across all stages — from data ingestion to model training.
+* Prevents missing-argument errors when raising dynamically within pipeline code.
 
 ### Example Usage
 
@@ -43,47 +96,34 @@ import sys
 try:
     result = 10 / 0
 except Exception as e:
-    # Either style is acceptable:
     raise CustomException("Division error", sys) from e
-    # or
-    raise CustomException("Division error", e)
 ```
 
-### Output Example
+### Example Output
 
 ```
-Error in /usr/local/airflow/dags/extract_data_from_gcp.py, line 42: Division error
+Error in src/data_ingestion.py, line 82: Division error
 Traceback (most recent call last):
-  File "/usr/local/airflow/dags/extract_data_from_gcp.py", line 42, in <module>
+  File "src/data_ingestion.py", line 82, in <module>
     result = 10 / 0
 ZeroDivisionError: division by zero
 ```
 
-This ensures all pipeline-related errors display clearly in logs and in the Airflow UI.
 
 
-
-## 🪵 `logger.py` — Centralised Logging
+## 🪵 `logger.py` — Centralised Logging (UTF-8 Enabled)
 
 ### Purpose
 
-Provides a **standardised logging setup** for the entire project.
-Every log entry is timestamped and written to a date-stamped file inside a dedicated `logs/` directory.
+Defines a **standardised logging system** that outputs logs both to console and to a daily log file (`logs/log_YYYY-MM-DD.log`), with full UTF-8 support for emojis and symbols.
 
 ### Log File Format
 
-* Directory: `logs/`
-* File name: `log_YYYY-MM-DD.log`
-* Example: `logs/log_2025-10-14.log`
-
-### Default Configuration
-
-* Logging **level**: `INFO`
-* Format:
-
-  ```
-  %(asctime)s - %(levelname)s - %(message)s
-  ```
+| Property  | Example                                     |
+| :-------- | :------------------------------------------ |
+| Directory | `logs/`                                     |
+| File name | `log_2025-10-15.log`                        |
+| Format    | `%(asctime)s - %(levelname)s - %(message)s` |
 
 ### Example Usage
 
@@ -91,28 +131,28 @@ Every log entry is timestamped and written to a date-stamped file inside a dedic
 from src.logger import get_logger
 
 logger = get_logger(__name__)
-logger.info("Model training started.")
-logger.error("Failed to connect to database.")
+logger.info("🚀 Data ingestion started.")
+logger.error("❌ Failed to connect to database.")
 ```
 
-### Output Example
+### Example Output
 
 ```
-2025-10-14 22:10:21,984 - INFO - Model training started.
-2025-10-14 22:10:21,985 - ERROR - Failed to connect to database.
+2025-10-15 20:12:45,103 - INFO - 🚀 Starting Data Ingestion Pipeline...
+2025-10-15 20:12:48,392 - INFO - ✅ Data Ingestion Pipeline completed successfully.
 ```
 
 
 
 ## 🧩 Integration Guidelines
 
-| Module Type  | Use `CustomException` for…                       | Use `get_logger` for…                        |
-| ------------ | ------------------------------------------------ | -------------------------------------------- |
-| Airflow DAGs | Wrapping operator code, file I/O, or DB failures | Logging DAG run status, data transfer counts |
-| ETL Scripts  | Transformation and load failures                 | Progress messages (“Loaded 6060 rows…”)      |
-| Pipelines    | Model training and inference exceptions          | Metrics, timing, or validation logs          |
+| Module Type  | Use `CustomException` for…             | Use `get_logger` for…                          |
+| ------------ | -------------------------------------- | ---------------------------------------------- |
+| Airflow DAGs | Database or network operation failures | Logging DAG/task progress or run status        |
+| ETL Scripts  | Transformation or extraction errors    | Progress messages (e.g. “Extracted 891 rows.”) |
+| Pipelines    | Model training/inference exceptions    | Performance and validation metrics             |
 
-**Tip:** Combine both for best traceability:
+### Combined Example
 
 ```python
 from src.logger import get_logger
@@ -121,19 +161,21 @@ import sys
 
 logger = get_logger(__name__)
 
-def process_data():
+def extract_data():
     try:
-        logger.info("Starting data processing...")
+        logger.info("Starting data extraction...")
         raise ValueError("Missing column detected.")
     except Exception as e:
-        logger.error("Processing failed.")
-        raise CustomException("ETL data processing error", sys) from e
+        logger.error("Extraction failed.")
+        raise CustomException("ETL extraction error", sys) from e
 ```
 
 
 
 ✅ **In summary:**
 
-* `custom_exception.py` ensures **consistent, informative error reporting**.
-* `logger.py` ensures **consistent, timestamped logging**.
-  Together they form the **foundation for reliability and observability** across the MLOps Titanic project.
+* `data_ingestion.py` → Handles data extraction, splitting, and saving from PostgreSQL.
+* `custom_exception.py` → Provides consistent, informative exception handling.
+* `logger.py` → Provides timestamped, UTF-8-enabled logging for all modules.
+
+Together, these files form the **core operational layer** of the MLOps Titanic Survival Prediction pipeline — ensuring that every workflow step is **observable**, **robust**, and **maintainable**.
