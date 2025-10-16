@@ -25,6 +25,22 @@ Notes
 from __future__ import annotations
 
 # -------------------------------------------------------------------
+# Temporary Import Path Hack (Option D)
+# -------------------------------------------------------------------
+# Ensure the project root (parent of this file's directory) is on sys.path
+# so that `import src.*` and `import config.*` work when running this file
+# as a script: `python src/data_ingestion.py`.
+#
+# ⚠️ Note:
+# - This is a pragmatic, script-friendly workaround.
+# - Prefer installing the package in editable mode (`pip install -e .`)
+#   or running as a module (`python -m src.data_ingestion`) in the long run.
+import os as _os
+import sys as _sys
+
+_sys.path.insert(0, _os.path.abspath(_os.path.join(_os.path.dirname(__file__), "..")))
+
+# -------------------------------------------------------------------
 # Standard & Third-Party Imports
 # -------------------------------------------------------------------
 import os
