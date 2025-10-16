@@ -1,223 +1,104 @@
 """
-data_ingestion.py
------------------
-Implements the DataIngestion class responsible for extracting
-the Titanic dataset from a PostgreSQL database and saving it
-into the local `artifacts/raw/` directory.
+logger.py
+----------
+Centralised logging configuration module for the
+MLOps Titanic Survival Prediction project.
 
-This module integrates with:
-- Centralised logging (`src.logger`)
-- Custom exception handling (`src.custom_exception`)
-- Configuration management (`config/database_config.py` and `config/paths_config.py`)
+This script sets up a standardised logging system that writes logs
+to a dedicated `logs/` directory and prints messages to the console.
+Each log file is automatically named by date (`log_YYYY-MM-DD.log`)
+and encoded in UTF-8 to support special characters and emojis.
+
+It provides a simple helper function, `get_logger(name)`, that returns
+a configured logger instance for use across all modules.
 
 Usage
 -----
 Example:
-    python src/data_ingestion.py
+    from src.logger import get_logger
+
+    logger = get_logger(__name__)
+    logger.info("🚀 Model training started.")
+    logger.error("❌ Failed to connect to database.")
 
 Notes
 -----
-- Requires a valid local or remote PostgreSQL connection defined in `config/database_config.py`.
-- Automatically creates directories under `artifacts/raw/` if they do not exist.
-- Splits the extracted dataset into training and test sets.
+- Logs are written to `logs/log_YYYY-MM-DD.log` (UTF-8 encoded)
+- Each message includes a timestamp and severity level.
+- Default level: INFO
+- Console and file outputs both support Unicode characters.
 """
 
-from __future__ import annotations
-
 # -------------------------------------------------------------------
-# Standard & Third-Party Imports
+# Standard Library Imports
 # -------------------------------------------------------------------
+import logging
 import os
 import sys
-import psycopg2
-import pandas as pd
-from sklearn.model_selection import train_test_split
-from sqlalchemy import create_engine
-from sqlalchemy.engine import URL
+from datetime import datetime
 
 # -------------------------------------------------------------------
-# Internal Imports
+# Directory Setup
 # -------------------------------------------------------------------
-from src.logger import get_logger
-from src.custom_exception import CustomException
-from config.database_config import DB_CONFIG
-from config.paths_config import *
+LOGS_DIR = "logs"
+os.makedirs(LOGS_DIR, exist_ok=True)
 
 # -------------------------------------------------------------------
-# Logger Setup
+# Log File Configuration
 # -------------------------------------------------------------------
-logger = get_logger(__name__)
+LOG_FILE = os.path.join(LOGS_DIR, f"log_{datetime.now().strftime('%Y-%m-%d')}.log")
 
-
 # -------------------------------------------------------------------
-# Class: DataIngestion
+# Logger Factory Function
 # -------------------------------------------------------------------
-class DataIngestion:
+def get_logger(name: str) -> logging.Logger:
     """
-    Handles the ingestion of Titanic data from a PostgreSQL database.
-
-    This includes:
-    - Establishing a database connection using the provided parameters.
-    - Extracting data from the `public.titanic` table.
-    - Splitting the dataset into training and test sets.
-    - Saving the resulting CSVs to `artifacts/raw/`.
+    Returns a configured logger instance with UTF-8 support for both
+    console and file output.
 
     Parameters
     ----------
-    db_params : dict
-        Dictionary containing PostgreSQL connection parameters.
-    output_dir : str
-        Directory path where the raw CSV files will be stored.
+    name : str
+        The name of the logger, typically `__name__`.
+
+    Returns
+    -------
+    logging.Logger
+        A logger object with INFO-level configuration and handlers set.
     """
+    logger = logging.getLogger(name)
+    logger.setLevel(logging.INFO)
 
-    def __init__(self, db_params: dict, output_dir: str):
-        self.db_params = db_params
-        self.output_dir = output_dir
-        os.makedirs(self.output_dir, exist_ok=True)
-        logger.info(f"DataIngestion initialised with output directory: {self.output_dir}")
+    # Prevent adding duplicate handlers if re-imported
+    if not logger.handlers:
+        # -------------------------------------------------------------------
+        # File Handler (UTF-8)
+        # -------------------------------------------------------------------
+        file_handler = logging.FileHandler(LOG_FILE, encoding="utf-8")
+        file_handler.setLevel(logging.INFO)
 
-    # -------------------------------------------------------------------
-    # Method: connect_to_db (psycopg2)
-    # -------------------------------------------------------------------
-    def connect_to_db(self):
-        """
-        Establishes a connection to the PostgreSQL database with psycopg2.
+        # -------------------------------------------------------------------
+        # Console Handler (UTF-8)
+        # -------------------------------------------------------------------
+        console_handler = logging.StreamHandler(sys.stdout)
+        console_handler.setLevel(logging.INFO)
 
-        Returns
-        -------
-        psycopg2.extensions.connection
-            Active database connection object.
+        # Ensure stdout stream is UTF-8 encoded (Python 3.9+)
+        if hasattr(console_handler.stream, "reconfigure"):
+            console_handler.stream.reconfigure(encoding="utf-8")
 
-        Raises
-        ------
-        CustomException
-            If the connection to the database cannot be established.
-        """
-        try:
-            conn = psycopg2.connect(
-                host=self.db_params["host"],
-                port=self.db_params["port"],
-                dbname=self.db_params["dbname"],
-                user=self.db_params["user"],
-                password=self.db_params["password"],
-            )
-            logger.info("Database connection established successfully (psycopg2).")
-            return conn
+        # -------------------------------------------------------------------
+        # Formatter
+        # -------------------------------------------------------------------
+        formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
 
-        except Exception as e:
-            logger.error(f"Error while establishing database connection: {e}")
-            raise CustomException(str(e), sys)
+        file_handler.setFormatter(formatter)
+        console_handler.setFormatter(formatter)
 
-    # -------------------------------------------------------------------
-    # Method: extract_data (SQLAlchemy)
-    # -------------------------------------------------------------------
-    def extract_data(self) -> pd.DataFrame:
-        """
-        Extracts Titanic data from the database using SQLAlchemy.
+        # -------------------------------------------------------------------
+        # Attach Handlers
+        # -------------------------------------------------------------------
+        logger.addHandler(file_handler)
+        logger.addHandler(console_handler)
 
-        Returns
-        -------
-        pd.DataFrame
-            Extracted Titanic dataset from `public.titanic`.
-
-        Raises
-        ------
-        CustomException
-            If any error occurs while building the engine or running the query.
-        """
-        try:
-            # Build a SQLAlchemy URL to avoid string-concatenation pitfalls
-            engine_url = URL.create(
-                drivername="postgresql+psycopg2",
-                username=self.db_params["user"],
-                password=self.db_params["password"],
-                host=self.db_params["host"],
-                port=self.db_params["port"],
-                database=self.db_params["dbname"],
-            )
-
-            # Create engine; pre-ping ensures stale connections are detected/recycled
-            engine = create_engine(engine_url, pool_pre_ping=True)
-
-            query = "SELECT * FROM public.titanic"
-
-            # Use a connection context for clean resource handling
-            with engine.connect() as conn:
-                df = pd.read_sql_query(sql=query, con=conn)
-
-            # Explicitly dispose the engine (closes pooled connections)
-            engine.dispose()
-
-            logger.info(f"Data extracted successfully via SQLAlchemy. Shape: {df.shape}")
-            return df
-
-        except Exception as e:
-            logger.error(f"Error while extracting data via SQLAlchemy: {e}")
-            raise CustomException(str(e), sys)
-
-    # -------------------------------------------------------------------
-    # Method: save_data
-    # -------------------------------------------------------------------
-    def save_data(self, df: pd.DataFrame) -> None:
-        """
-        Splits the dataset into training and test subsets,
-        then saves them as CSV files in the `artifacts/raw/` directory.
-
-        Parameters
-        ----------
-        df : pd.DataFrame
-            Extracted Titanic dataset.
-
-        Raises
-        ------
-        CustomException
-            If saving or splitting fails.
-        """
-        try:
-            train_df, test_df = train_test_split(df, test_size=0.2, random_state=42)
-            train_df.to_csv(TRAIN_PATH, index=False)
-            test_df.to_csv(TEST_PATH, index=False)
-            logger.info(
-                f"Data successfully split and saved.\n"
-                f"Train: {TRAIN_PATH} ({train_df.shape}), Test: {TEST_PATH} ({test_df.shape})"
-            )
-
-        except Exception as e:
-            logger.error(f"Error while saving split data: {e}")
-            raise CustomException(str(e), sys)
-
-    # -------------------------------------------------------------------
-    # Method: run
-    # -------------------------------------------------------------------
-    def run(self) -> None:
-        """
-        Executes the complete data ingestion workflow.
-
-        Steps
-        -----
-        1. Extract data from the `public.titanic` table (SQLAlchemy).
-        2. Split the dataset into training and test sets.
-        3. Save the datasets under `artifacts/raw/`.
-
-        Raises
-        ------
-        CustomException
-            If any stage of the ingestion pipeline fails.
-        """
-        try:
-            logger.info("🚀 Starting Data Ingestion Pipeline...")
-            df = self.extract_data()
-            self.save_data(df)
-            logger.info("✅ Data Ingestion Pipeline completed successfully.")
-
-        except Exception as e:
-            logger.error(f"❌ Error during Data Ingestion Pipeline: {e}")
-            raise CustomException(str(e), sys)
-
-
-# -------------------------------------------------------------------
-# Script Entrypoint
-# -------------------------------------------------------------------
-if __name__ == "__main__":
-    data_ingestion = DataIngestion(DB_CONFIG, RAW_DIR)
-    data_ingestion.run()
+    return logger
