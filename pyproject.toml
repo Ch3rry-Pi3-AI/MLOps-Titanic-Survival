@@ -1,0 +1,18 @@
+[project]
+name = "mlops-titanic-survival"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "alibi-detect>=0.12.0",
+    "flask>=3.1.2",
+    "imbalanced-learn>=0.14.0",
+    "numpy>=1.26.4",
+    "pandas>=2.3.3",
+    "prometheus-client>=0.23.1",
+    "psycopg2>=2.9.11",
+    "redis>=6.4.0",
+    "scikit-learn>=1.7.2",
+    "setuptools>=80.9.0",
+]
