@@ -1,46 +1,33 @@
-# 🤖 **Model Training — MLOps Titanic Survival Prediction**
+# 🔄 **Training Pipeline — MLOps Titanic Survival Prediction**
 
-This stage transforms the engineered features stored in Redis into a **trained machine learning model**.
-It retrieves features by `PassengerId`, splits them into training and test sets, performs **Random Forest** hyperparameter tuning, evaluates accuracy, and saves the trained model to the local filesystem for reuse in downstream pipelines.
+This stage introduces a **single orchestration script** that runs the whole workflow end-to-end:
+**Data Ingestion ➜ Feature Processing ➜ Feature Store (Redis) ➜ Model Training ➜ Model Artefact**.
+
+It’s a lightweight but reproducible entry point that ties together everything you built in earlier stages.
 
 ## 🧾 What this stage includes
 
-* ✅ **Model training module** (`src/model_training.py`) — trains and evaluates a Random Forest classifier
-* ✅ **Integration with Redis Feature Store** — retrieves features and target labels directly from the store
-* ✅ **Model artefact storage** — saves the trained model under `artifacts/models/random_forest_model.pkl`
-* ✅ **Automatic logging and exception handling** for every step of the process
+* ✅ `pipeline/training_pipeline.py` — coordinates ingestion, processing, and training
+* ✅ Saves a trained model to `artifacts/models/random_forest_model.pkl`
+* ✅ Uses Redis Feature Store populated in the previous stage
 
-## 🧮 Run the Model Training pipeline
-
-This script will:
-
-1. Connect to the **Redis Feature Store** and retrieve all entity features
-2. Split entity IDs into training and test subsets
-3. Run **RandomizedSearchCV** for hyperparameter tuning on a Random Forest model
-4. Evaluate accuracy on the test set
-5. Save the trained model to `artifacts/models/random_forest_model.pkl`
+## ⚙️ Run the full training pipeline
 
 ```bash
-python src/model_training.py
+python pipeline/training_pipeline.py
 ```
 
-**Typical output:**
+**Typical output (abridged):**
 
 ```
-2025-10-16 13:51:34,756 - INFO - 🔧 Initialising Feature Store and running Model Training...
-2025-10-16 13:51:34,757 - INFO - RedisFeatureStore initialised: host=localhost, port=6379, db=0
-2025-10-16 13:51:34,758 - INFO - ModelTraining initialised.
-2025-10-16 13:51:34,758 - INFO - 🚀 Starting Model Training pipeline...
-2025-10-16 13:51:34,773 - INFO - Found 712 entities in Redis.
-2025-10-16 13:51:34,775 - INFO - Extracting data from Redis...
-2025-10-16 13:51:35,148 - INFO - Fetched 569 feature rows from Redis.
-2025-10-16 13:51:35,149 - INFO - Extracting data from Redis...
-2025-10-16 13:51:35,250 - INFO - Fetched 143 feature rows from Redis.
-2025-10-16 13:51:35,255 - INFO - Prepared training data with 569 rows and 11 features.
-2025-10-16 13:51:40,543 - INFO - Best parameters: {'n_estimators': 100, 'min_samples_split': 5, 'min_samples_leaf': 2, 'max_depth': 20}
-2025-10-16 13:51:40,726 - INFO - ✅ Test Accuracy: 0.8322
-2025-10-16 13:51:40,733 - INFO - 📦 Model saved at: artifacts/models/random_forest_model.pkl
-2025-10-16 13:51:40,733 - INFO - 🏁 End of Model Training pipeline.
+2025-10-16 14:52:14,105 - INFO - 🚀 Starting Data Ingestion Pipeline...
+2025-10-16 14:52:15,301 - INFO - ✅ Data Ingestion Pipeline completed successfully.
+2025-10-16 14:52:15,302 - INFO - 🚀 Starting Data Processing pipeline...
+2025-10-16 14:52:15,611 - INFO - ✅ Data Processing pipeline completed successfully.
+2025-10-16 14:52:15,612 - INFO - 🚀 Starting Model Training pipeline...
+2025-10-16 14:52:18,244 - INFO - ✅ Test Accuracy: 0.8351
+2025-10-16 14:52:18,247 - INFO - 📦 Model saved at: artifacts/models/random_forest_model.pkl
+2025-10-16 14:52:18,248 - INFO - 🏁 End of Model Training pipeline.
 ```
 
 ## 🗂️ Updated Project Structure
@@ -49,51 +36,35 @@ python src/model_training.py
 mlops-titanic-survival-prediction/
 ├── artifacts/
 │   ├── raw/
-│   │   ├── titanic_train.csv
-│   │   └── titanic_test.csv
 │   ├── processed/
-│   └── models/                        # 🧠 Stores trained ML model artefacts
+│   └── models/
 │       └── random_forest_model.pkl
 ├── config/
 │   ├── database_config.py
 │   └── paths_config.py
 ├── notebook/
 │   └── titanic.ipynb
+├── pipeline/
+│   └── training_pipeline.py
 ├── src/
 │   ├── custom_exception.py
 │   ├── logger.py
 │   ├── data_ingestion.py
 │   ├── feature_store.py
 │   ├── feature_processing.py
-│   └── model_training.py              # 🧩 Trains, tunes, evaluates, and saves model
+│   └── model_training.py
 ├── logs/
 │   └── log_YYYY-MM-DD.log
 ├── requirements.txt
 ├── setup.py
-└── README.md                          # You are here
+└── README.md
 ```
 
-## 🔗 How this stage fits the pipeline
+## 🔗 Where this fits
 
-**Raw data** (PostgreSQL → CSV) ➜
-**Feature engineering** (`feature_processing.py`) ➜
-**Feature storage** (Redis) ➜
-**Model training** (`model_training.py`) ➜
-**Saved model artefact** (`artifacts/models/random_forest_model.pkl`)
+You can now reproduce the entire **data→features→model** flow with one command.
+This sets the foundation for **CI/CD**, **scheduled retraining**, and downstream serving.
 
-This marks the transition from **feature preparation** to **machine learning model training**, where features created and stored in previous stages are now leveraged to train and persist a predictive model.
+## 🚀 Next stage — Flask Inference App
 
-## 🛠️ Quick tips
-
-* Ensure Redis is running (`docker ps`) before executing the training script
-* The model artefact (`random_forest_model.pkl`) can later be loaded for inference or retraining
-* All logs are stored in `logs/log_YYYY-MM-DD.log` for traceability
-* If you re-run training, the model file is automatically overwritten with the latest version
-
-## 🚀 Next stage — Training Pipeline
-
-The next branch evolves this into a **modular training pipeline**, integrating:
-
-* Configurable model selection and hyperparameter search
-* Automated saving of model metadata and performance metrics
-* Seamless linkage to model registry and inference stages
+Next, we’ll build a **Flask app** to serve predictions to users, loading the saved model from `artifacts/models/` and—optionally—pulling features from Redis on demand.
