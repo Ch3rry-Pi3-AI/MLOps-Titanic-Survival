@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Keep original path -->
+    <link rel="stylesheet" href="/static/style.css">
+    <title>Survival Prediction</title>
+
+    <!-- Layout tweaks -->
+    <style>
+        /* Wider separation between columns */
+        .two-col { 
+            display: grid; 
+            grid-template-columns: 1fr; 
+            gap: 36px;              /* increased */
+            column-gap: 48px;       /* increased */
+        }
+        @media (min-width: 980px) {
+            .two-col { grid-template-columns: 1fr 1fr; }
+        }
+        .col { width: 100%; }
+
+        /* Ensure all inputs/selects are equal width and consistent height */
+        .prediction-form input,
+        .prediction-form select {
+            width: 100%;
+            box-sizing: border-box;
+            min-height: 42px;       /* consistent control height */
+        }
+
+        /* Button spacing so it sits visually closer to the summary panel */
+        .btn {
+            margin-top: 6px;
+            margin-bottom: 14px;    /* space before summary panel */
+        }
+
+        /* Summary heading & label */
+        .prediction-result h3 { margin-top: 10px; }
+        .pred-label {
+            font-size: 20px; 
+            font-weight: 700; 
+            text-transform: uppercase; 
+            letter-spacing: .5px;
+        }
+
+        /* Error banner */
+        .error-banner {
+            margin-top: 15px; 
+            padding: 10px 12px; 
+            border-radius: 6px;
+            background: #ffe6e6; 
+            color: #8a0000; 
+            border: 1px solid #ffb3b3;
+        }
+
+        /* Drift panel & table – keep faint inner lines and tidy columns */
+        .drift-panel {
+            margin-top: 10px; 
+            padding: 16px; 
+            background: #fafbff;
+            border: 1px solid #eaecef; 
+            border-radius: 10px;
+        }
+        .drift-panel h3 { margin-top: 0; }
+
+        .drift-table {
+            width: 100%; 
+            border-collapse: collapse; 
+            margin-top: 10px; 
+            font-size: 14px; 
+            table-layout: fixed;
+        }
+        .drift-table thead th {
+            background: #f6f8fa; 
+            font-weight: 600; 
+            border-bottom: 1px solid #eaecef;
+        }
+        .drift-table th, 
+        .drift-table td {
+            border-right: 1px solid #f0f1f4; /* faint column lines */
+            padding: 8px 10px; 
+            text-align: left;
+        }
+        .drift-table th:last-child, 
+        .drift-table td:last-child { border-right: none; }
+        .drift-table tbody tr { border-bottom: 1px solid #f0f1f4; } /* faint row lines */
+        .drift-table tbody tr:last-child { border-bottom: none; }
+
+        /* Nice column widths */
+        .col-feature { width: 50%; }
+        .col-pval    { width: 30%; }
+        .col-flag    { width: 20%; text-align: center; }
+
+        .drift-yes { color: #b53a3a; font-weight: 700; }
+        .drift-no  { color: #2c7a4b; font-weight: 700; }
+
+        .flag-yes { color: #b53a3a; font-weight: 700; }
+        .flag-no  { color: #94a3b8; }
+        .drift-note { margin-top: 8px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Survival Prediction</h1>
+
+        <div class="two-col">
+            <!-- Left column -->
+            <div class="col">
+                <form action="/predict" method="POST" class="prediction-form" id="prediction-form">
+                    <!-- Age: integer -->
+                    <div class="form-group">
+                        <label for="Age">Age:</label>
+                        <input type="number" id="Age" name="Age" required step="1" min="0" max="120" placeholder="e.g. 29">
+                    </div>
+
+                    <!-- Fare: integer -->
+                    <div class="form-group">
+                        <label for="Fare">Fare:</label>
+                        <input type="number" id="Fare" name="Fare" required step="1" min="0" max="10000" placeholder="e.g. 72">
+                    </div>
+
+                    <!-- Pclass: select 1,2,3 -->
+                    <div class="form-group">
+                        <label for="Pclass">Pclass:</label>
+                        <select id="Pclass" name="Pclass" required>
+                            <option value="" disabled selected>Select class</option>
+                            <option value="1">1</option>
+                            <option value="2">2</option>
+                            <option value="3">3</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="Sex">Sex:</label>
+                        <select id="Sex" name="Sex" required>
+                            <option value="0">Male</option>
+                            <option value="1">Female</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="Embarked">Embarked:</label>
+                        <select id="Embarked" name="Embarked" required>
+                            <option value="0">Cherbourg</option>
+                            <option value="1">Queenstown</option>
+                            <option value="2">Southampton</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="Familysize">Family Size:</label>
+                        <input type="number" id="Familysize" name="Familysize" required step="1" min="0" max="15" placeholder="e.g. 2">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="Isalone">Is Alone:</label>
+                        <select id="Isalone" name="Isalone" required>
+                            <option value="1">Yes</option>
+                            <option value="0">No</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="HasCabin">Has Cabin:</label>
+                        <select id="HasCabin" name="HasCabin" required>
+                            <option value="1">Yes</option>
+                            <option value="0">No</option>
+                        </select>
+                    </div>
+
+                    <!-- Title: select (ensure codes match your training mapping) -->
+                    <div class="form-group">
+                        <label for="Title">Title:</label>
+                        <select id="Title" name="Title" required>
+                            <option value="" disabled selected>Select title</option>
+                            <option value="0">Mr</option>
+                            <option value="1">Miss</option>
+                            <option value="2">Mrs</option>
+                            <option value="3">Master</option>
+                            <option value="4">Rare</option>
+                        </select>
+                    </div>
+
+                    <!-- Predict button sits visually above the summary panel -->
+                    <button type="submit" class="btn">Predict</button>
+                </form>
+
+                <!-- Prediction Summary placed right under the button so it appears prominently -->
+                <div class="prediction-result">
+                    <h3>Prediction Summary</h3>
+                    {% if prediction_label %}
+                        <p class="pred-label">{{ prediction_label }}</p>
+                        {% if prediction_sentence %}
+                            <p>{{ prediction_sentence }}</p>
+                        {% endif %}
+                        {% if prediction_prob is not none %}
+                            <p><strong>Estimated probability of survival:</strong> {{ prediction_prob }}%</p>
+                        {% endif %}
+                    {% else %}
+                        <p>No predictions yet made...</p>
+                    {% endif %}
+                </div>
+
+                {% if error_text %}
+                <div class="error-banner">
+                    {{ error_text }}
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Right column: Drift detector -->
+            <div class="col">
+                <div class="drift-panel">
+                    <h3>Drift Detector</h3>
+                    {% if drift is not none %}
+                        <p>
+                            <strong>Status:</strong>
+                            {% if drift.is_drift %}
+                                <span class="drift-yes">Drift evidenced</span>
+                            {% else %}
+                                <span class="drift-no">No drift evidenced</span>
+                            {% endif %}
+                            &nbsp;|&nbsp;<strong>α = </strong>{{ drift.alpha }}
+                        </p>
+
+                        <table class="drift-table">
+                            <thead>
+                                <tr>
+                                    <th class="col-feature">Feature</th>
+                                    <th class="col-pval">p-value</th>
+                                    <th class="col-flag">Flagged</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for row in drift.rows %}
+                                <tr>
+                                    <td>{{ row.feature }}</td>
+                                    <td>{{ row.pval }}</td>
+                                    <td>
+                                        {% if row.flagged %}
+                                            <span class="flag-yes">⚠️</span>
+                                        {% else %}
+                                            <span class="flag-no">—</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+
+                        {% if drift.flagged_features and drift.is_drift %}
+                            <p class="drift-note"><strong>Possible drivers:</strong> {{ drift.flagged_features|join(', ') }}</p>
+                        {% endif %}
+                    {% else %}
+                        <p>No drift check run yet.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
