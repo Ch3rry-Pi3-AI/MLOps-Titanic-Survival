@@ -4,4 +4,4 @@ cmd
 
 powershell
 
-.venv\Scripts\activate
+.venv\Scripts\activate 
