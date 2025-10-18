@@ -99,7 +99,7 @@ def predict():
                 flagged = pv < alpha
                 rows.append({
                     "feature": fname,
-                    "pval": f"{pv:.6f}",
+                    "pval": f"{pv:.3f}",
                     "flagged": flagged
                 })
                 if flagged:

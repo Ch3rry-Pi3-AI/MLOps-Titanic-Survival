@@ -1,78 +1,303 @@
-/* styles.css */
-body {
-    font-family: 'Arial', sans-serif;
+/* ============================================================
+   Titanic Survival Prediction — Night Mode Glass UI
+   (Glow button, stronger headers, clean system font, nicer table)
+   ============================================================ */
+
+/* ------------------------------
+   Theme Variables
+   ------------------------------ */
+:root {
+    --bg: #0b0e14;
+    --card-bg: rgba(30, 30, 30, 0.7);
+    --text: #f5f5f5;
+    --muted: #a3a3a3;
+    --accent: #2563eb;
+    --accent-hover: #1e40af;
+    --border: rgba(255, 255, 255, 0.15);
+    --border-soft: rgba(255, 255, 255, 0.08);
+    --success: #22c55e;
+    --danger: #ef4444;
+
+    --radius: 14px;
+    --shadow: 0 10px 30px rgba(0,0,0,0.5);
+    --gap: 28px;
+}
+
+/* ------------------------------
+   HTML / BODY Background Setup
+   ------------------------------ */
+html {
+    height: 100%;
+    background-color: #000; /* fallback */
+}
+
+html, body {
     margin: 0;
     padding: 0;
-    background: #f7f8fc;
-    color: #333;
+    color: var(--text);
+    /* ← back to the clean system UI stack you had earlier */
+    font-family: ui-sans-serif, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+
+    /* Background image */
+    background-image: url("/static/background.jpg");
+    background-size: cover;
+    background-position: center top;
+    background-repeat: no-repeat;
+    background-attachment: scroll; /* fixes top/bottom bands */
+    min-height: 100vh;
+    overflow-x: hidden;
+    position: relative;
 }
 
-.container {
-    max-width: 600px;
-    margin: 50px auto;
-    padding: 20px;
-    background: #fff;
-    border-radius: 10px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+/* Dark fade overlay over background */
+body::before {
+    content: "";
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.55);
+    z-index: -1;
+    backdrop-filter: blur(3px);
 }
 
-h1, h3 {
+/* ------------------------------
+   Layout Containers
+   ------------------------------ */
+.shell {
+    max-width: 1280px;
+    margin: 40px auto;
+    padding: 0 24px;
+}
+
+/* ------------------------------
+   Header Title (bigger + stronger glow)
+   ------------------------------ */
+.page-header h1 {
     text-align: center;
-    color: #444;
+    margin: 0 0 36px 0;
+    font-size: 56px;               /* bigger main header */
+    font-weight: 900;
+    letter-spacing: 0.5px;
+    color: #e8f0ff;
+    text-shadow:
+        0 0 12px rgba(37, 99, 235, 0.85),
+        0 0 28px rgba(37, 99, 235, 0.65),
+        0 0 44px rgba(37, 99, 235, 0.45),
+        0 0 60px rgba(37, 99, 235, 0.30);
 }
 
-.prediction-form {
-    margin-top: 20px;
+/* ------------------------------
+   Two-Column Layout
+   ------------------------------ */
+.two-col {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--gap);
 }
 
-.form-group {
-    margin-bottom: 15px;
+@media (min-width: 960px) {
+    .two-col {
+        grid-template-columns: 1fr 1fr;
+        align-items: start;
+    }
 }
 
-label {
-    display: block;
-    font-size: 14px;
-    margin-bottom: 5px;
-    color: #555;
+.col { width: 100%; }
+
+/* ------------------------------
+   Card Containers
+   ------------------------------ */
+.card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 20px;
+    backdrop-filter: blur(8px);
 }
 
-input, select {
-    width: 100%;
-    padding: 10px;
-    font-size: 14px;
-    border: 1px solid #ddd;
-    border-radius: 5px;
-    background: #f9f9f9;
+/* Gap between stacked cards */
+.col > .card + .card {
+    margin-top: var(--gap);
 }
 
-input:focus, select:focus {
-    outline: none;
-    border-color: #4caf50;
-}
-
-.btn {
-    display: block;
-    width: 100%;
-    padding: 10px;
-    font-size: 16px;
+/* Section headers (bigger) */
+.card-title {
+    margin: 2px 0 16px 0;
+    font-size: 22px;              /* bigger section titles */
+    font-weight: 800;
     color: #fff;
-    background: #4caf50;
-    border: none;
-    border-radius: 5px;
+    letter-spacing: 0.2px;
+}
+
+/* ------------------------------
+   Form Styling
+   ------------------------------ */
+.prediction-form {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 16px;
+}
+
+/* ↑ dropdown headers a smidge bigger + bold */
+.form-group label {
+    display: block;
+    font-size: 16px;
+    font-weight: 700;
+    margin-bottom: 6px;
+    color: var(--text);
+}
+
+.prediction-form input,
+.prediction-form select {
+    width: 100%;
+    min-height: 44px;
+    padding: 10px 12px;
+    font-size: 14px;
+    color: var(--text);
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    box-sizing: border-box;
+}
+
+.prediction-form input:focus,
+.prediction-form select:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.4);
+}
+
+/* ------------------------------
+   Button Styling (bigger label + animated glow on hover)
+   ------------------------------ */
+.btn {
+    display: inline-block;
+    width: 100%;
+    min-height: 52px;             /* taller button */
+    padding: 12px 16px;
+    font-size: 19px;              /* bigger label */
+    font-weight: 800;
+    letter-spacing: 0.2px;
+    color: #fff;
+    background: linear-gradient(135deg, var(--accent), #3b82f6);
+    border: 0;
+    border-radius: 12px;
     cursor: pointer;
-    transition: background 0.3s ease;
+    transition: transform 0.06s ease;
+    box-shadow: 0 6px 18px rgba(37, 99, 235, 0.25);
+}
+
+@keyframes glowPulse {
+    0%   { box-shadow: 0 6px 18px rgba(37, 99, 235, 0.25); }
+    50%  { box-shadow: 0 10px 28px rgba(37, 99, 235, 0.55), 0 0 16px rgba(59, 130, 246, 0.45); }
+    100% { box-shadow: 0 6px 18px rgba(37, 99, 235, 0.25); }
 }
 
 .btn:hover {
-    background: #45a049;
+    animation: glowPulse 1.6s ease-in-out infinite;
 }
 
-.prediction-result {
-    margin-top: 30px;
+.btn:active { transform: translateY(1px); }
+
+/* ------------------------------
+   Alerts
+   ------------------------------ */
+.alert {
+    margin-top: 14px;
+    padding: 12px 14px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: rgba(255, 0, 0, 0.1);
+    color: #ffbaba;
+}
+
+/* ------------------------------
+   Prediction Summary
+   ------------------------------ */
+.prediction-result { margin-top: 6px; }
+
+.pred-label {
+    font-size: 24px;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    margin: 4px 0 6px 0;
     text-align: center;
+    text-shadow: 0 0 8px rgba(0,0,0,0.6);
 }
 
-.prediction-result p {
-    font-size: 16px;
-    color: #444;
+.pred-survived { color: var(--success); }
+.pred-not      { color: var(--danger); }
+
+.pred-sentence { 
+    margin: 6px 0 0 0; 
+    color: #e5e7eb; 
+    text-align: center; 
 }
+
+.muted { 
+    color: var(--muted); 
+    text-align: center; 
+}
+
+/* ------------------------------
+   Drift Detector Table
+   ------------------------------ */
+.drift-status { margin: 0 0 10px 0; }
+
+.drift-yes { color: var(--danger); font-weight: 700; }
+.drift-no  { color: var(--success); font-weight: 700; }
+
+.table-wrap { overflow-x: auto; }
+
+.drift-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+    table-layout: fixed;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.drift-table thead th {
+    background: rgba(255,255,255,0.1);
+    font-weight: 600;
+    border-bottom: 1px solid var(--border);
+    color: #fff;
+}
+
+.drift-table th,
+.drift-table td {
+    padding: 10px 12px;
+    border-right: 1px solid var(--border-soft);
+    color: #e5e5e5;
+}
+
+.drift-table th:last-child,
+.drift-table td:last-child { border-right: none; }
+
+.drift-table tbody tr { border-bottom: 1px solid var(--border-soft); }
+.drift-table tbody tr:last-child { border-bottom: none; }
+
+.col-feature { width: 50%; text-align: left; }
+.col-pval    { width: 30%; text-align: center; }
+.col-flag    { width: 20%; text-align: center; }
+
+.pval-cell   { text-align: center; }
+.flag-cell   { text-align: center; }
+
+.flag-yes { font-weight: 800; color: var(--danger); }
+.flag-no  { color: #9aa3af; }
+
+.drift-note { margin-top: 10px; color: #e5e7eb; }
+
+/* Nicely formatted feature label + hint */
+.feat-name { font-weight: 700; }
+.feat-hint { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+/* Gap between summary and drift detector */
+.drift-panel { margin-top: var(--gap); }
