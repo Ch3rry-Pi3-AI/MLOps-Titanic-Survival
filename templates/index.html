@@ -1,39 +1,102 @@
+<!--
+index.html
+----------
+UI for the **MLOps Titanic Survival Prediction** Flask app.
+
+This template renders:
+- A left column with a validated input form for passenger attributes.
+- A right column that shows the latest prediction summary and a data-drift panel.
+- Server-provided values are injected via Jinja (Flask) variables.
+
+Conventions
+-----------
+- Keep IDs aligned with server-side field names (e.g., "Age", "Fare").
+- Interaction features are computed server-side; do not expose in the form.
+- Accessibility: use <label for="..."> bindings; keep semantic structure (header/main/section).
+
+Dependencies
+------------
+- /static/style.css : layout, grid, cards, form controls, table styling.
+-->
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <!-- Meta: character set and responsive viewport -->
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <!-- App stylesheet (served by Flask static endpoint) -->
     <link rel="stylesheet" href="/static/style.css" />
+
+    <!-- Page title shown in browser tab -->
     <title>Titanic Survival Prediction</title>
 </head>
 <body>
+    <!-- Outer page shell for max-width and vertical rhythm -->
     <div class="shell">
+        <!-- Page header -->
         <header class="page-header">
             <h1>Titanic Survival Prediction</h1>
         </header>
 
+        <!-- Two-column responsive layout -->
         <main class="two-col">
-            <!-- Left column: inputs -->
-            <section class="col">
+            <!-- =========================================================
+                 LEFT COLUMN: Passenger Input Form
+                 ======================================================= -->
+            <section class="col" aria-labelledby="inputs-title">
                 <div class="card">
-                    <h3 class="card-title">Passenger Inputs</h3>
+                    <h3 class="card-title" id="inputs-title">Passenger Inputs</h3>
+
+                    <!--
+                    The form posts to /predict.
+                    - Numeric inputs use step/min/max to mirror server-side validation.
+                    - <label for> ties labels to inputs for accessibility.
+                    - Selects use controlled value sets matching server-side mappings.
+                    -->
                     <form action="/predict" method="POST" class="prediction-form" id="prediction-form">
-                        <!-- Age -->
+                        <!-- Age (years) -->
                         <div class="form-group">
                             <label for="Age">Age</label>
-                            <input type="number" id="Age" name="Age" required step="1" min="0" max="120" placeholder="e.g. 29" />
+                            <input
+                                type="number"
+                                id="Age"
+                                name="Age"
+                                required
+                                step="1"
+                                min="0"
+                                max="120"
+                                placeholder="e.g. 29"
+                                inputmode="numeric"
+                                aria-describedby="hint-age"
+                            />
+                            <!-- Optional hint spans can be styled faintly in CSS -->
+                            <span id="hint-age" class="hint muted">0–120 years</span>
                         </div>
 
-                        <!-- Fare -->
+                        <!-- Fare (ticket price) -->
                         <div class="form-group">
                             <label for="Fare">Fare</label>
-                            <input type="number" id="Fare" name="Fare" required step="1" min="0" max="10000" placeholder="e.g. 72" />
+                            <input
+                                type="number"
+                                id="Fare"
+                                name="Fare"
+                                required
+                                step="1"
+                                min="0"
+                                max="10000"
+                                placeholder="e.g. 72"
+                                inputmode="numeric"
+                                aria-describedby="hint-fare"
+                            />
+                            <span id="hint-fare" class="hint muted">0–10,000 (currency-agnostic)</span>
                         </div>
 
-                        <!-- Passenger Class (was Pclass) -->
+                        <!-- Passenger Class (ordinal: 1,2,3) -->
                         <div class="form-group">
                             <label for="Pclass">Passenger Class</label>
-                            <select id="Pclass" name="Pclass" required>
+                            <select id="Pclass" name="Pclass" required aria-label="Passenger Class">
                                 <option value="" disabled selected>Select class</option>
                                 <option value="1">First</option>
                                 <option value="2">Second</option>
@@ -41,53 +104,65 @@
                             </select>
                         </div>
 
-                        <!-- Sex -->
+                        <!-- Sex (0=Male, 1=Female) -->
                         <div class="form-group">
                             <label for="Sex">Sex</label>
-                            <select id="Sex" name="Sex" required>
+                            <select id="Sex" name="Sex" required aria-label="Sex">
                                 <option value="0">Male</option>
                                 <option value="1">Female</option>
                             </select>
                         </div>
 
-                        <!-- Embarked -->
+                        <!-- Embarked (0=Cherbourg, 1=Queenstown, 2=Southampton) -->
                         <div class="form-group">
                             <label for="Embarked">Embarked</label>
-                            <select id="Embarked" name="Embarked" required>
+                            <select id="Embarked" name="Embarked" required aria-label="Port of Embarkation">
                                 <option value="0">Cherbourg</option>
                                 <option value="1">Queenstown</option>
                                 <option value="2">Southampton</option>
                             </select>
                         </div>
 
-                        <!-- Family size -->
+                        <!-- Family size (SibSp + Parch + 1) -->
                         <div class="form-group">
                             <label for="Familysize">Family Size</label>
-                            <input type="number" id="Familysize" name="Familysize" required step="1" min="0" max="15" placeholder="e.g. 2" />
+                            <input
+                                type="number"
+                                id="Familysize"
+                                name="Familysize"
+                                required
+                                step="1"
+                                min="0"
+                                max="15"
+                                placeholder="e.g. 2"
+                                inputmode="numeric"
+                                aria-describedby="hint-familysize"
+                            />
+                            <span id="hint-familysize" class="hint muted">Siblings/Spouses + Parents/Children + self</span>
                         </div>
 
-                        <!-- Is alone -->
+                        <!-- Is alone (1=Yes, 0=No) -->
                         <div class="form-group">
                             <label for="Isalone">Is Alone</label>
-                            <select id="Isalone" name="Isalone" required>
+                            <select id="Isalone" name="Isalone" required aria-label="Is Alone">
                                 <option value="1">Yes</option>
                                 <option value="0">No</option>
                             </select>
                         </div>
 
-                        <!-- Has cabin -->
+                        <!-- Has cabin (1=Yes, 0=No) -->
                         <div class="form-group">
                             <label for="HasCabin">Has Cabin</label>
-                            <select id="HasCabin" name="HasCabin" required>
+                            <select id="HasCabin" name="HasCabin" required aria-label="Has Cabin">
                                 <option value="1">Yes</option>
                                 <option value="0">No</option>
                             </select>
                         </div>
 
-                        <!-- Title -->
+                        <!-- Title (categorical: Mr/Miss/Mrs/Master/Rare) -->
                         <div class="form-group">
                             <label for="Title">Title</label>
-                            <select id="Title" name="Title" required>
+                            <select id="Title" name="Title" required aria-label="Title">
                                 <option value="" disabled selected>Select title</option>
                                 <option value="0">Mr</option>
                                 <option value="1">Miss</option>
@@ -97,33 +172,52 @@
                             </select>
                         </div>
 
+                        <!-- Submit button (primary action) -->
                         <button type="submit" class="btn">Predict</button>
                     </form>
 
+                    <!-- Error banner (rendered when server returns error_text) -->
                     {% if error_text %}
-                    <div class="alert error">
+                    <div class="alert error" role="alert" aria-live="assertive">
                         {{ error_text }}
                     </div>
                     {% endif %}
                 </div>
             </section>
 
-            <!-- Right column: Prediction Summary (top) + Drift Detector -->
-            <section class="col">
-                <!-- Prediction Summary FIRST -->
+            <!-- =========================================================
+                 RIGHT COLUMN: Prediction Summary + Drift Detector
+                 ======================================================= -->
+            <section class="col" aria-labelledby="summary-title">
+                <!-- Prediction panel -->
                 <div class="card">
-                    <h3 class="card-title">Prediction Summary</h3>
+                    <h3 class="card-title" id="summary-title">Prediction Summary</h3>
+
+                    <!--
+                    Conditional rendering:
+                    - When prediction_label exists => show badge and details.
+                    - Else => show a muted placeholder.
+                    -->
                     <div class="prediction-result">
                         {% if prediction_label %}
+                            {# Determine style class once, based on label text #}
                             {% set is_survived = 'SURVIVED' in prediction_label|upper %}
-                            <p class="pred-label {{ 'pred-survived' if is_survived else 'pred-not' }}">
+                            <p
+                                class="pred-label {{ 'pred-survived' if is_survived else 'pred-not' }}"
+                                aria-live="polite"
+                            >
                                 {{ prediction_label }}
                             </p>
+
                             {% if prediction_sentence %}
                                 <p class="pred-sentence">{{ prediction_sentence }}</p>
                             {% endif %}
+
                             {% if prediction_prob is not none %}
-                                <p><strong>Estimated probability of survival:</strong> {{ prediction_prob }}%</p>
+                                <p>
+                                    <strong>Estimated probability of survival:</strong>
+                                    {{ prediction_prob }}%
+                                </p>
                             {% endif %}
                         {% else %}
                             <p class="muted">No predictions yet made…</p>
@@ -131,10 +225,19 @@
                     </div>
                 </div>
 
-                <!-- Drift Detector BELOW (with explicit gap) -->
-                <div class="card drift-panel">
-                    <h3 class="card-title">Drift Detector</h3>
+                <!-- Drift detector panel -->
+                <div class="card drift-panel" aria-labelledby="drift-title">
+                    <h3 class="card-title" id="drift-title">Drift Detector</h3>
+
+                    <!--
+                    Drift payload contains:
+                      - is_drift (bool): overall drift flag
+                      - alpha (string): formatted significance level (e.g., "0.05")
+                      - rows (list): [{ feature_label, feature, pval, flagged, hint? }, ...]
+                      - flagged_features (list of pretty labels)
+                    -->
                     {% if drift is not none %}
+                        <!-- Status line with overall drift flag and α -->
                         <p class="drift-status">
                             <strong>Status:</strong>
                             {% if drift.is_drift %}
@@ -145,25 +248,33 @@
                             &nbsp;|&nbsp;<strong>α = </strong>{{ drift.alpha }}
                         </p>
 
+                        <!-- Scrollable table wrapper for small screens -->
                         <div class="table-wrap">
                             <table class="drift-table">
                                 <thead>
                                     <tr>
-                                        <th class="col-feature">Feature</th>
-                                        <th class="col-pval">p-value</th>
-                                        <th class="col-flag">Flagged</th>
+                                        <th class="col-feature" scope="col">Feature</th>
+                                        <th class="col-pval" scope="col">p-value</th>
+                                        <th class="col-flag" scope="col">Flagged</th>
                                     </tr>
                                 </thead>
                                 <tbody>
+                                    <!-- One row per feature with rounded p-value and flag icon -->
                                     {% for row in drift.rows %}
                                     <tr>
-                                        <td>{{ row.feature }}</td>
+                                        <td>
+                                            {{ row.feature_label or row.feature }}
+                                            {% if row.hint %}
+                                                <span class="hint muted">— {{ row.hint }}</span>
+                                            {% endif %}
+                                        </td>
                                         <td class="pval-cell">{{ row.pval }}</td>
-                                        <td class="flag-cell">
+                                        <td class="flag-cell" aria-label="Flagged below alpha">
                                             {% if row.flagged %}
+                                                <!-- Caution icon when p < α -->
                                                 <span class="flag-yes" title="Flagged below α">⚠️</span>
                                             {% else %}
-                                                <span class="flag-no">—</span>
+                                                <span class="flag-no" aria-hidden="true">—</span>
                                             {% endif %}
                                         </td>
                                     </tr>
@@ -172,10 +283,15 @@
                             </table>
                         </div>
 
+                        <!-- Optional helper text listing flagged features -->
                         {% if drift.flagged_features and drift.is_drift %}
-                            <p class="drift-note"><strong>Possible drivers:</strong> {{ drift.flagged_features|join(', ') }}</p>
+                            <p class="drift-note">
+                                <strong>Possible drivers:</strong>
+                                {{ drift.flagged_features|join(', ') }}
+                            </p>
                         {% endif %}
                     {% else %}
+                        <!-- Placeholder when no drift has been computed yet -->
                         <p class="muted">No drift check run yet.</p>
                     {% endif %}
                 </div>

@@ -1,38 +1,51 @@
-# 🔄 **Training Pipeline — MLOps Titanic Survival Prediction**
+# 🌐 **Inference Stage — Flask Web App (MLOps Titanic Survival Prediction)**
 
-This stage introduces a **single orchestration script** that runs the whole workflow end-to-end:
-**Data Ingestion ➜ Feature Processing ➜ Feature Store (Redis) ➜ Model Training ➜ Model Artefact**.
+![Titanic Survival Dashboard Demo](img/flask_app/titanic.gif)
 
-It’s a lightweight but reproducible entry point that ties together everything you built in earlier stages.
+This stage transforms your trained Random Forest model into a **fully interactive inference dashboard**, served via **Flask**.  
+Users can enter passenger details, receive **real-time predictions**, and view **data drift detection results** in a single elegant interface.  
+The app also exports **Prometheus metrics** for future monitoring and alerting via **Grafana**.
 
-## 🧾 What this stage includes
 
-* ✅ `pipeline/training_pipeline.py` — coordinates ingestion, processing, and training
-* ✅ Saves a trained model to `artifacts/models/random_forest_model.pkl`
-* ✅ Uses Redis Feature Store populated in the previous stage
+## 🧠 **Key Features**
 
-## ⚙️ Run the full training pipeline
+* 🧍 **Passenger Input Form** — enter values for age, fare, class, sex, port of embarkation, etc.  
+* 📊 **Live Model Prediction** — displays *SURVIVED* or *DID NOT SURVIVE* with probability estimates.  
+* ⚠️ **Data Drift Detection** — powered by **Alibi Detect (KSDrift)**, showing per-feature p-values and flagged drift indicators.  
+* 🧾 **Human-Readable Summary** — contextualises predictions (e.g., “A Female aged 28 in Second Class…”).  
+* 🌙 **Night Mode Glass UI** — a responsive dark theme with glowing buttons and translucent panels.  
+* 📈 **Prometheus Metrics Endpoint** — exposes `/metrics` for scraping model activity statistics:
+  - `prediction_count` — total predictions served  
+  - `drift_count` — total drift detections  
+* 🧩 **Scalable Design** — easy to extend with additional routes, models, or input variables.
+
+## ⚙️ **Run the Flask App**
+
+From the project root:
 
 ```bash
-python pipeline/training_pipeline.py
-```
+python app.py
+````
 
-**Typical output (abridged):**
+This launches:
 
-```
-2025-10-16 14:52:14,105 - INFO - 🚀 Starting Data Ingestion Pipeline...
-2025-10-16 14:52:15,301 - INFO - ✅ Data Ingestion Pipeline completed successfully.
-2025-10-16 14:52:15,302 - INFO - 🚀 Starting Data Processing pipeline...
-2025-10-16 14:52:15,611 - INFO - ✅ Data Processing pipeline completed successfully.
-2025-10-16 14:52:15,612 - INFO - 🚀 Starting Model Training pipeline...
-2025-10-16 14:52:18,244 - INFO - ✅ Test Accuracy: 0.8351
-2025-10-16 14:52:18,247 - INFO - 📦 Model saved at: artifacts/models/random_forest_model.pkl
-2025-10-16 14:52:18,248 - INFO - 🏁 End of Model Training pipeline.
-```
+* Flask app on **port 5000**
+* Prometheus metrics endpoint on **port 8000**
 
-## 🗂️ Updated Project Structure
+Then open your browser at 👉 `http://localhost:5000`
 
-```
+## 💡 **Dashboard Walkthrough**
+
+The animated demo below illustrates:
+
+* Submitting passenger details that yield both **SURVIVED** and **DID NOT SURVIVE** outcomes.
+* A case where **data drift** is triggered and flagged in the Drift Detector panel.
+
+![Titanic Survival GIF](img/flask_app/titanic.gif)
+
+## 🗂️ **Updated Project Structure**
+
+```text
 mlops-titanic-survival-prediction/
 ├── artifacts/
 │   ├── raw/
@@ -42,6 +55,11 @@ mlops-titanic-survival-prediction/
 ├── config/
 │   ├── database_config.py
 │   └── paths_config.py
+├── img/
+│   └── flask_app/
+│       └── titanic.gif
+├── logs/
+│   └── log_YYYY-MM-DD.log
 ├── notebook/
 │   └── titanic.ipynb
 ├── pipeline/
@@ -53,18 +71,36 @@ mlops-titanic-survival-prediction/
 │   ├── feature_store.py
 │   ├── feature_processing.py
 │   └── model_training.py
-├── logs/
-│   └── log_YYYY-MM-DD.log
+├── templates/
+│   └── index.html                # Flask UI template
+├── static/
+│   ├── style.css                 # Night Mode Glass UI stylesheet
+│   └── background.jpg            # Optional background image
+├── app.py                        # Flask inference web app
 ├── requirements.txt
 ├── setup.py
 └── README.md
 ```
 
-## 🔗 Where this fits
+## 🧩 **Integration Summary**
 
-You can now reproduce the entire **data→features→model** flow with one command.
-This sets the foundation for **CI/CD**, **scheduled retraining**, and downstream serving.
+This stage bridges **model training → real-time inference**.
+It demonstrates the full loop of:
 
-## 🚀 Next stage — Flask Inference App
+1. Loading trained model artefacts
+2. Accepting user input
+3. Computing predictions
+4. Detecting data drift
+5. Serving outputs through a modern UI
 
-Next, we’ll build a **Flask app** to serve predictions to users, loading the saved model from `artifacts/models/` and—optionally—pulling features from Redis on demand.
+The result is an **end-to-end, production-style inference pipeline** with observability hooks in place.
+
+## 🚀 **Next Stage — Monitoring with Prometheus & Grafana**
+
+Next, you’ll deploy **Prometheus** and **Grafana** to monitor:
+
+* Model prediction volume (`prediction_count`)
+* Drift detection frequency (`drift_count`)
+* System health and response latency
+
+This step adds real-time **monitoring**, **alerting**, and **dashboarding** capabilities — completing the MLOps lifecycle.

@@ -1,11 +1,11 @@
 /* ============================================================
    Titanic Survival Prediction — Night Mode Glass UI
-   (Glow button, stronger headers, clean system font, nicer table)
+   (Glow button, stronger headers, system font, tidy table)
    ============================================================ */
 
-/* ------------------------------
-   Theme Variables
-   ------------------------------ */
+/* ------------------------------------------------------------
+   Theme Tokens (colours, radii, spacing, shadows)
+   ------------------------------------------------------------ */
 :root {
     --bg: #0b0e14;
     --card-bg: rgba(30, 30, 30, 0.7);
@@ -23,61 +23,58 @@
     --gap: 28px;
 }
 
-/* ------------------------------
-   HTML / BODY Background Setup
-   ------------------------------ */
+/* ------------------------------------------------------------
+   Page Background & Base Typography
+   ------------------------------------------------------------ */
 html {
     height: 100%;
-    background-color: #000; /* fallback */
+    background-color: #000; /* hard fallback when image fails */
 }
 
 html, body {
     margin: 0;
     padding: 0;
     color: var(--text);
-    /* ← back to the clean system UI stack you had earlier */
+    /* Clean, cross-platform UI stack */
     font-family: ui-sans-serif, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
 
-    /* Background image */
+    /* Hero background */
     background-image: url("/static/background.jpg");
     background-size: cover;
     background-position: center top;
     background-repeat: no-repeat;
-    background-attachment: scroll; /* fixes top/bottom bands */
+    background-attachment: scroll; /* avoids top/bottom banding on mobile */
     min-height: 100vh;
     overflow-x: hidden;
     position: relative;
 }
 
-/* Dark fade overlay over background */
+/* Dim + blur overlay over the hero image for contrast */
 body::before {
     content: "";
     position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
+    inset: 0;
     background-color: rgba(0, 0, 0, 0.55);
     z-index: -1;
     backdrop-filter: blur(3px);
 }
 
-/* ------------------------------
+/* ------------------------------------------------------------
    Layout Containers
-   ------------------------------ */
+   ------------------------------------------------------------ */
 .shell {
-    max-width: 1280px;
-    margin: 40px auto;
-    padding: 0 24px;
+    max-width: 1280px;       /* readable line length */
+    margin: 40px auto;       /* center horizontally */
+    padding: 0 24px;         /* page side gutters */
 }
 
-/* ------------------------------
-   Header Title (bigger + stronger glow)
-   ------------------------------ */
+/* ------------------------------------------------------------
+   Header Title (pronounced glow)
+   ------------------------------------------------------------ */
 .page-header h1 {
     text-align: center;
     margin: 0 0 36px 0;
-    font-size: 56px;               /* bigger main header */
+    font-size: 56px;         /* bold, confident masthead */
     font-weight: 900;
     letter-spacing: 0.5px;
     color: #e8f0ff;
@@ -88,27 +85,27 @@ body::before {
         0 0 60px rgba(37, 99, 235, 0.30);
 }
 
-/* ------------------------------
-   Two-Column Layout
-   ------------------------------ */
+/* ------------------------------------------------------------
+   Two-Column Responsive Grid
+   ------------------------------------------------------------ */
 .two-col {
     display: grid;
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr; /* stack on mobile */
     gap: var(--gap);
 }
 
 @media (min-width: 960px) {
     .two-col {
-        grid-template-columns: 1fr 1fr;
+        grid-template-columns: 1fr 1fr; /* two columns on desktop */
         align-items: start;
     }
 }
 
 .col { width: 100%; }
 
-/* ------------------------------
-   Card Containers
-   ------------------------------ */
+/* ------------------------------------------------------------
+   Cards (glassmorphism panel)
+   ------------------------------------------------------------ */
 .card {
     background: var(--card-bg);
     border: 1px solid var(--border);
@@ -118,30 +115,30 @@ body::before {
     backdrop-filter: blur(8px);
 }
 
-/* Gap between stacked cards */
+/* Vertical rhythm between stacked cards */
 .col > .card + .card {
     margin-top: var(--gap);
 }
 
-/* Section headers (bigger) */
+/* Section headings within cards */
 .card-title {
     margin: 2px 0 16px 0;
-    font-size: 22px;              /* bigger section titles */
+    font-size: 22px;
     font-weight: 800;
     color: #fff;
     letter-spacing: 0.2px;
 }
 
-/* ------------------------------
-   Form Styling
-   ------------------------------ */
+/* ------------------------------------------------------------
+   Form Controls
+   ------------------------------------------------------------ */
 .prediction-form {
     display: grid;
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr; /* equal width controls */
     gap: 16px;
 }
 
-/* ↑ dropdown headers a smidge bigger + bold */
+/* Stronger labels for scannability */
 .form-group label {
     display: block;
     font-size: 16px;
@@ -150,6 +147,7 @@ body::before {
     color: var(--text);
 }
 
+/* Inputs + selects share consistent sizing and visuals */
 .prediction-form input,
 .prediction-form select {
     width: 100%;
@@ -161,8 +159,12 @@ body::before {
     border: 1px solid var(--border);
     border-radius: 10px;
     box-sizing: border-box;
+    -webkit-appearance: none; /* more consistent selects in Safari */
+       -moz-appearance: none;
+            appearance: none;
 }
 
+/* Accessible focus ring (keyboard) */
 .prediction-form input:focus,
 .prediction-form select:focus {
     outline: none;
@@ -170,15 +172,19 @@ body::before {
     box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.4);
 }
 
-/* ------------------------------
-   Button Styling (bigger label + animated glow on hover)
-   ------------------------------ */
+/* Subtle helper text / hints */
+.hint { display: inline-block; margin-top: 4px; }
+.muted { color: var(--muted); text-align: center; }
+
+/* ------------------------------------------------------------
+   Primary Action Button (animated glow)
+   ------------------------------------------------------------ */
 .btn {
     display: inline-block;
     width: 100%;
-    min-height: 52px;             /* taller button */
+    min-height: 52px;             /* generous hit target */
     padding: 12px 16px;
-    font-size: 19px;              /* bigger label */
+    font-size: 19px;
     font-weight: 800;
     letter-spacing: 0.2px;
     color: #fff;
@@ -190,21 +196,24 @@ body::before {
     box-shadow: 0 6px 18px rgba(37, 99, 235, 0.25);
 }
 
+/* Breathing glow */
 @keyframes glowPulse {
     0%   { box-shadow: 0 6px 18px rgba(37, 99, 235, 0.25); }
     50%  { box-shadow: 0 10px 28px rgba(37, 99, 235, 0.55), 0 0 16px rgba(59, 130, 246, 0.45); }
     100% { box-shadow: 0 6px 18px rgba(37, 99, 235, 0.25); }
 }
 
-.btn:hover {
-    animation: glowPulse 1.6s ease-in-out infinite;
-}
-
+.btn:hover { animation: glowPulse 1.6s ease-in-out infinite; }
 .btn:active { transform: translateY(1px); }
 
-/* ------------------------------
+/* Respect reduced motion preferences */
+@media (prefers-reduced-motion: reduce) {
+    .btn:hover { animation: none; }
+}
+
+/* ------------------------------------------------------------
    Alerts
-   ------------------------------ */
+   ------------------------------------------------------------ */
 .alert {
     margin-top: 14px;
     padding: 12px 14px;
@@ -214,9 +223,9 @@ body::before {
     color: #ffbaba;
 }
 
-/* ------------------------------
-   Prediction Summary
-   ------------------------------ */
+/* ------------------------------------------------------------
+   Prediction Summary Styles
+   ------------------------------------------------------------ */
 .prediction-result { margin-top: 6px; }
 
 .pred-label {
@@ -238,21 +247,17 @@ body::before {
     text-align: center; 
 }
 
-.muted { 
-    color: var(--muted); 
-    text-align: center; 
-}
-
-/* ------------------------------
+/* ------------------------------------------------------------
    Drift Detector Table
-   ------------------------------ */
+   ------------------------------------------------------------ */
 .drift-status { margin: 0 0 10px 0; }
 
 .drift-yes { color: var(--danger); font-weight: 700; }
 .drift-no  { color: var(--success); font-weight: 700; }
 
-.table-wrap { overflow-x: auto; }
+.table-wrap { overflow-x: auto; } /* keep table usable on narrow screens */
 
+/* Solid border on the table + soft internal dividers */
 .drift-table {
     width: 100%;
     border-collapse: collapse;
@@ -263,6 +268,7 @@ body::before {
     overflow: hidden;
 }
 
+/* Header row contrast */
 .drift-table thead th {
     background: rgba(255,255,255,0.1);
     font-weight: 600;
@@ -270,19 +276,22 @@ body::before {
     color: #fff;
 }
 
+/* Cell paddings + vertical column dividers */
 .drift-table th,
 .drift-table td {
     padding: 10px 12px;
-    border-right: 1px solid var(--border-soft);
+    border-right: 1px solid var(--border-soft); /* faint vertical lines */
     color: #e5e5e5;
 }
 
 .drift-table th:last-child,
 .drift-table td:last-child { border-right: none; }
 
+/* Row separators */
 .drift-table tbody tr { border-bottom: 1px solid var(--border-soft); }
 .drift-table tbody tr:last-child { border-bottom: none; }
 
+/* Column widths for tidy layout */
 .col-feature { width: 50%; text-align: left; }
 .col-pval    { width: 30%; text-align: center; }
 .col-flag    { width: 20%; text-align: center; }
@@ -290,14 +299,16 @@ body::before {
 .pval-cell   { text-align: center; }
 .flag-cell   { text-align: center; }
 
+/* Flags (⚠️ vs —) */
 .flag-yes { font-weight: 800; color: var(--danger); }
 .flag-no  { color: #9aa3af; }
 
+/* Explanatory line below the table when drift is present */
 .drift-note { margin-top: 10px; color: #e5e7eb; }
 
-/* Nicely formatted feature label + hint */
+/* Optional inline labels */
 .feat-name { font-weight: 700; }
 .feat-hint { font-size: 12px; color: var(--muted); margin-top: 2px; }
 
-/* Gap between summary and drift detector */
+/* Space between summary card and drift panel on smaller screens */
 .drift-panel { margin-top: var(--gap); }
