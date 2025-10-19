@@ -1,0 +1,22 @@
+# ============================================================
+# 📈 Prometheus Configuration — Flask App Metrics Scraping
+# ------------------------------------------------------------
+# This configuration defines how Prometheus collects metrics
+# from the Flask inference web application (app.py).
+# ------------------------------------------------------------
+# - The Flask app exposes metrics at: http://localhost:5000/metrics
+# - Within Docker, we reference it via host.docker.internal
+# - Scraping occurs every 15 seconds
+# ============================================================
+
+global:
+  scrape_interval: 15s        # Default frequency for metric collection
+
+scrape_configs:
+  # ----------------------------------------------------------
+  # 🧠 Flask Inference App — Metrics Source
+  # ----------------------------------------------------------
+  - job_name: "flask_app"     # Job label shown in Prometheus UI
+    static_configs:
+      - targets:
+          - "host.docker.internal:5000"   # Flask app endpoint (metrics)
