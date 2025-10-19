@@ -1,0 +1,44 @@
+# ============================================================
+# 🐳 Docker Compose — Prometheus & Grafana Monitoring Stack
+# ------------------------------------------------------------
+# This file runs Prometheus and Grafana in a shared bridge
+# network to monitor metrics from the Flask inference service.
+# ============================================================
+
+version: "3.9"
+
+services:
+  # ----------------------------------------------------------
+  # 📈 Prometheus — Metrics Collection
+  # ----------------------------------------------------------
+  prometheus:
+    image: prom/prometheus:latest            # Official Prometheus image
+    container_name: prometheus
+    ports:
+      - "9090:9090"                          # Web UI accessible at http://localhost:9090
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml  # Mount local config
+    networks:
+      - monitoring                           # Attach to shared network
+
+  # ----------------------------------------------------------
+  # 📊 Grafana — Metrics Visualisation Dashboard
+  # ----------------------------------------------------------
+  grafana:
+    image: grafana/grafana:latest            # Official Grafana image
+    container_name: grafana
+    ports:
+      - "3000:3000"                          # Web UI accessible at http://localhost:3000
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: "admin"    # Default password (can be overridden)
+    depends_on:
+      - prometheus                           # Ensure Prometheus starts first
+    networks:
+      - monitoring                           # Same network to communicate with Prometheus
+
+# ------------------------------------------------------------
+# 🌐 Shared Bridge Network
+# ------------------------------------------------------------
+networks:
+  monitoring:
+    driver: bridge                           # Enables container-to-container communication
