@@ -26,8 +26,8 @@ flowchart LR
 ```mermaid
 flowchart LR
     User[Browser UI] --> App[Flask app]
-    App --> Predict[/predict endpoint]
-    App --> Metrics[/metrics endpoint]
+    App --> Predict["/predict endpoint"]
+    App --> Metrics["/metrics endpoint"]
     Predict --> Model[Random Forest model]
     App --> Redis["(Redis feature store)"]
     Metrics --> Prom[Prometheus]
