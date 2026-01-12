@@ -39,7 +39,7 @@ flowchart LR
 - Feature store + drift detection for production-friendly model behavior.
 - Monitoring baked in (prediction count + drift count) from day one.
 
-## Demo (keep this)
+## Demo
 ![Flask App Demo](img/flask_app/titanic.gif)
 
 ## Quick Start
