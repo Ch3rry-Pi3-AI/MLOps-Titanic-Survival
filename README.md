@@ -2,18 +2,35 @@
 
 An end-to-end MLOps project that takes raw Titanic data from Postgres, engineers features, trains a Random Forest model, serves predictions through a Flask web app, and monitors drift and usage with Prometheus and Grafana.
 
+## Pipeline Overview
+
+### Data Engineering
 ```mermaid
 flowchart LR
     GCS[GCS bucket] --> AF[Airflow DAG]
     AF --> PG[(Postgres)]
     PG --> DI[Data ingestion]
     DI --> RAW[artifacts/raw]
-    RAW --> DP[Data processing + SMOTE]
+```
+
+### ML Pipeline
+```mermaid
+flowchart LR
+    RAW[artifacts/raw] --> DP[Data processing + SMOTE]
     DP --> Redis[(Redis feature store)]
     Redis --> MT[Model training]
-    MT --> Model[Model artifact]
-    Model --> API[Flask inference app]
-    API --> Prom[Prometheus]
+    MT --> Model[artifacts/models/random_forest_model.pkl]
+```
+
+### Serving and Monitoring
+```mermaid
+flowchart LR
+    User[Browser UI] --> App[Flask app]
+    App --> Predict[/predict endpoint]
+    App --> Metrics[/metrics endpoint]
+    Predict --> Model[Random Forest model]
+    App --> Redis[(Redis feature store)]
+    Metrics --> Prom[Prometheus]
     Prom --> Grafana
 ```
 
@@ -64,17 +81,6 @@ docker compose up -d
 ```
 Prometheus runs on `http://localhost:9090` and Grafana on `http://localhost:3000` (admin/admin).
 
-## Architecture Overview
-```mermaid
-flowchart LR
-    User[Browser UI] --> UI[Flask + Jinja Templates]
-    UI --> API[/predict endpoint]
-    API --> Model[Random Forest model]
-    API --> Redis[(Redis feature store)]
-    API --> Metrics[/metrics endpoint]
-    Metrics --> Prom[Prometheus]
-    Prom --> Grafana
-```
 
 ## Tech Stack
 - Front end: HTML + Jinja templates in `templates/index.html`, CSS in `static/style.css`.
