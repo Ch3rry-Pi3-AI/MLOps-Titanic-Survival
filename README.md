@@ -29,7 +29,7 @@ flowchart LR
     App --> Predict[/predict endpoint]
     App --> Metrics[/metrics endpoint]
     Predict --> Model[Random Forest model]
-    App --> Redis[(Redis feature store)]
+    App --> Redis["(Redis feature store)"]
     Metrics --> Prom[Prometheus]
     Prom --> Grafana
 ```
