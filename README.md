@@ -1,4 +1,4 @@
-# MLOps Titanic Survival Prediction
+# MLOps | Titanic Survival Prediction
 
 An end-to-end MLOps project that takes raw Titanic data from Postgres, engineers features, trains a Random Forest model, serves predictions through a Flask web app, and monitors drift and usage with Prometheus and Grafana.
 
